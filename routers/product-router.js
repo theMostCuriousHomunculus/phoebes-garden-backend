@@ -17,7 +17,7 @@ router.get('/:productId', fetchProduct);
 
 router.get('/', fetchProducts);
 
-router.patch('/', authorization, editProduct);
+router.patch('/:productId', authorization, editProduct);
 
 router.post('/', authorization, createProduct);
 

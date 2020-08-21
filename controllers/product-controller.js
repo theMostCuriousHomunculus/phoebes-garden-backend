@@ -26,8 +26,7 @@ async function deleteProduct (req, res) {
 async function editProduct (req, res) {
   try {
     const changes = { ...req.body };
-    delete changes.product_id;
-    const product = await Product.findByIdAndUpdate(req.body.product_id, changes, { new: true });
+    const product = await Product.findByIdAndUpdate(req.params.productId, changes, { new: true });
     if (!product) {
       next();
     } else {
@@ -40,7 +39,7 @@ async function editProduct (req, res) {
 
 async function fetchProduct (req, res) {
   try {
-    const product = await Product.findById(req.params.productId);
+    const product = await Product.findById(req.params.productId).select('_id description image name price quantity');
     if (!product) {
       res.status(404).send();
     } else {
@@ -52,9 +51,18 @@ async function fetchProduct (req, res) {
 }
 
 async function fetchProducts (req, res) {
+  let productIdString = req.query._id;
+  let productIdArray;
+  let dbQuery = {};
+  if (productIdString) {
+    productIdArray = productIdString.split(',');
+    console.log(productIdArray);
+    delete req.query._id;
+    dbQuery = { ...req.query, _id: { $in: productIdArray } }
+  }
   try {
-    const products = await Product.find(req.query);
-    res.status(200).json({ products });
+    const products = await Product.find(dbQuery).select('_id description image name price quantity');
+    res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
