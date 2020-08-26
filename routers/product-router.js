@@ -1,6 +1,7 @@
 const express = require('express');
 
 const authorization = require('../middleware/authorization');
+const fileUpload = require('../middleware/file-upload');
 const {
   createProduct,
   deleteProduct,
@@ -11,14 +12,14 @@ const {
 
 const router = new express.Router();
 
-router.delete('/', authorization, deleteProduct);
+router.delete('/:productId', authorization, deleteProduct);
 
 router.get('/:productId', fetchProduct);
 
 router.get('/', fetchProducts);
 
-router.patch('/:productId', authorization, editProduct);
+router.patch('/:productId', authorization, fileUpload.single('image'), editProduct);
 
-router.post('/', authorization, createProduct);
+router.post('/', authorization, fileUpload.single('image'), createProduct);
 
 module.exports = router;

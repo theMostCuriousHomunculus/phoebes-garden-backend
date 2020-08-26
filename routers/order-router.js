@@ -3,6 +3,7 @@ const express = require('express');
 const authorization = require('../middleware/authorization');
 const {
   createOrder,
+  createPaymentIntent,
   deleteOrder,
   editOrder,
   fetchOrder,
@@ -18,6 +19,8 @@ router.get('/:orderId', authorization, fetchOrder);
 router.get('/', authorization, fetchOrders);
 
 router.patch('/', authorization, editOrder);
+
+router.post('/create-payment-intent', createPaymentIntent);
 
 router.post('/', createOrder);
 

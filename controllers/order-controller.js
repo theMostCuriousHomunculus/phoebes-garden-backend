@@ -1,30 +1,10 @@
+const stripe = require('stripe')(`${process.env.STRIPE_TEST_SECRET_KEY}`);
+
 const Order = require('../models/order-model');
 const Product = require('../models/product-model');
 
 async function createOrder (req, res, next) {
   try {
-    const productIds = req.body.items.map(function (item) {
-      return item.product_id;
-    });
-    let items = await Product.find({ _id: { $in: productIds } }, { name: 1, price: 1 });
-    items = items.map(function (item) {
-      return { ...item._doc };
-    });
-
-    for (let item of items) {
-      item.quantity = req.body.items.find(function (x) {
-        return x.product_id === item._id.toString();
-      }).quantity;
-      item.product_id = item._id;
-      delete item._id;
-      item.product_name = item.name;
-      delete item.name;
-    }
-
-    const total = items.reduce(function (a, c) {
-      return a + (c.price * c.quantity);
-    }, 0);
-
     const order = new Order({
       customer_contact: {
         city: req.body.city,
@@ -47,6 +27,39 @@ async function createOrder (req, res, next) {
     res.status(201).json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+}
+
+async function createPaymentIntent (req, res, next) {
+  try {
+    const productIds = req.body.items.map(function (item) {
+      return item._id;
+    });
+    let items = await Product.find({ _id: { $in: productIds } }, { name: 1, price: 1 });
+    items = items.map(function (item) {
+      return { ...item._doc };
+    });
+    for (let item of items) {
+      item.quantity = req.body.items.find(function (x) {
+        return x._id === item._id.toString();
+      }).quantity;
+    }
+
+    const total = items.reduce(function (a, c) {
+      return a + (c.price * c.quantity);
+    }, 0) * 100;
+
+    // Create a PaymentIntent with the order amount and currency
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: total,
+      currency: "usd"
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret
+    });
+  } catch (error) {
+    res.status(500).send(error);
   }
 }
 
@@ -102,6 +115,7 @@ async function fetchOrders (req, res, next) {
 
 module.exports = {
   createOrder,
+  createPaymentIntent,
   deleteOrder,
   editOrder,
   fetchOrder,

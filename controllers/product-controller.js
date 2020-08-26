@@ -1,8 +1,16 @@
+const fs = require('fs');
+
 const Product = require('../models/product-model');
 
 async function createProduct (req, res) {
   try {
-    const product = new Product(req.body);
+    const product = new Product({
+      description: req.body.description,
+      image: req.file.path.replace(/\\/g, '/'),
+      name: req.body.name,
+      price: req.body.price,
+      quantity: req.body.quantity
+    });
     await product.save();
     res.status(201).json(product);
   } catch (error) {
@@ -12,10 +20,15 @@ async function createProduct (req, res) {
 
 async function deleteProduct (req, res) {
   try {
-    const product = await Product.findByIdAndDelete(req.body.product_id);
+    const product = await Product.findByIdAndDelete(req.params.productId);
     if (!product) {
       next();
     } else {
+      fs.unlink(product.image, function (error) {
+        if (error) {
+          console.log(error);
+        }
+      });
       res.status(200).json(product);
     }
   } catch (error) {
@@ -25,7 +38,21 @@ async function deleteProduct (req, res) {
 
 async function editProduct (req, res) {
   try {
-    const changes = { ...req.body };
+    const changes = {
+      description: req.body.description,
+      name: req.body.name,
+      price: req.body.price,
+      quantity: req.body.quantity
+    };
+    if (req.file) {
+      const oldProduct = await Product.findById(req.params.productId);
+      fs.unlink(oldProduct.image, function (error) {
+        if (error) {
+          console.log(error);
+        }
+      });
+      changes.image = req.file.path.replace(/\\/g, '/');
+    }
     const product = await Product.findByIdAndUpdate(req.params.productId, changes, { new: true });
     if (!product) {
       next();
@@ -56,7 +83,6 @@ async function fetchProducts (req, res) {
   let dbQuery = {};
   if (productIdString) {
     productIdArray = productIdString.split(',');
-    console.log(productIdArray);
     delete req.query._id;
     dbQuery = { ...req.query, _id: { $in: productIdArray } }
   }
