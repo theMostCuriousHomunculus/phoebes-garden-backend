@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "connect": "/Users/Casey/mongodb/bin/mongod.exe --dbpath=/Users/Casey/mongodb-data",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Casey Johnson",
@@ -22,7 +23,5 @@
     "stripe": "^8.89.0",
     "uuid": "^8.3.0"
   },
-  "devDependencies": {
-    "dotenv": "^8.2.0"
-  }
+  "devDependencies": {}
 }
