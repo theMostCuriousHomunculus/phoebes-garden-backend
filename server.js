@@ -15,7 +15,7 @@ const adminRouter = require('./routers/admin-router');
 const orderRouter = require('./routers/order-router');
 const productRouter = require('./routers/product-router');
 
-mongoose.connect(process.env.DB_CONNECTION || `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@phoebes-garden.4nov7.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, {
+mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@phoebes-garden.4nov7.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, {
   useCreateIndex: true,
   useNewUrlParser: true,
   useUnifiedTopology: true

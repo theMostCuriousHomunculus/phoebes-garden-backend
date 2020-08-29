@@ -20,6 +20,7 @@ async function logOut (req, res, next) {
   }
 }
 
+// not allowing users to create admin accounts
 async function register (req, res, next) {
   const { email, password } = req.body;
   const admin = new Admin({ email, password });
