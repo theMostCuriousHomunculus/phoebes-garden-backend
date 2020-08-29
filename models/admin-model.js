@@ -22,7 +22,7 @@ const adminSchema = new Schema({
 });
 
 adminSchema.methods.generateAuthenticationToken = async function () {
-  const token = jwt.sign({ _id: this._id.toString() }, process.env.SECRET);
+  const token = jwt.sign({ _id: this._id.toString() }, process.env.JWT_SECRET);
   this.sessions = this.sessions.concat(token);
   await this.save();
   return token;

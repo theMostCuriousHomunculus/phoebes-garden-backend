@@ -1,19 +1,23 @@
-require('dotenv').config();
+// require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
 
+const bodyParser = require('body-parser');
 const express = require('express');
 const mongoose = require('mongoose');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // const session = require('express-session');
 // const MongoDBtore = require('connect-mongodb-session')(session);
 // const csrf = require('csurf');
+
+const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
 const adminRouter = require('./routers/admin-router');
 const orderRouter = require('./routers/order-router');
 const productRouter = require('./routers/product-router');
 
-mongoose.connect(process.env.DB_CONNECTION, {
+mongoose.connect(process.env.DB_CONNECTION || `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@phoebes-garden.4nov7.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, {
   useCreateIndex: true,
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -25,6 +29,26 @@ const server = express();
 //   collection: 'sessions'
 // });
 // const csrfProtection = csrf();
+
+server.post('/webhook', bodyParser.raw({type: 'application/json'}), function (req, res) {
+
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      console.log('PaymentIntent was successful!');
+    }
+  
+    // Return a 200 response to acknowledge receipt of the event
+    res.json({ received: true });
+  }
+  catch (err) {
+    res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+});
 
 server.use(express.json());
 server.use(express.static(path.join(__dirname, 'public')));
@@ -76,6 +100,6 @@ server.use(function (error, req, res, next) {
   res.status(error.code || 500).json({ message: error.message || 'An unknown error occured!' });
 });
 
-server.listen(port = process.env.PORT || 5000, function () {
-    console.log(`Server is up on port ${port}.`);
+server.listen(process.env.PORT, function () {
+    console.log(`Server is up on port ${process.env.PORT}.`);
 });

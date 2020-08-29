@@ -14,7 +14,7 @@ async function authorization (req, res, next) {
         throw new Error('You must be logged in to perform this action.');
     }
 
-    const decodedToken = jwt.verify(token, process.env.SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const admin = await Admin.findOne({ _id: decodedToken._id, sessions: token });
     if (!admin) {
         throw new Error('You are do not have permission to perform the requested action.');

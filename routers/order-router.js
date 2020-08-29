@@ -12,13 +12,13 @@ const {
 
 const router = new express.Router();
 
-router.delete('/', authorization, deleteOrder);
+router.delete('/:orderId', authorization, deleteOrder);
 
 router.get('/:orderId', authorization, fetchOrder);
 
 router.get('/', authorization, fetchOrders);
 
-router.patch('/', authorization, editOrder);
+router.patch('/:orderId', authorization, editOrder);
 
 router.post('/create-payment-intent', createPaymentIntent);
 

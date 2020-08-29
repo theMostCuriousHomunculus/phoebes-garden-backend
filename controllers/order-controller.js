@@ -1,33 +1,64 @@
-const stripe = require('stripe')(`${process.env.STRIPE_TEST_SECRET_KEY}`);
+const stripe = require('stripe')(`${process.env.STRIPE_SECRET_KEY}`);
 
 const Order = require('../models/order-model');
 const Product = require('../models/product-model');
 
 async function createOrder (req, res, next) {
-  try {
-    const order = new Order({
-      customer_contact: {
-        city: req.body.city,
-        email_address: req.body.email_address,
-        phone_number: req.body.phone_number,
-        state: req.body.state,
-        street_address: req.body.street_address,
-        zip: req.body.zip
-      },
-      customer_name: {
-        first: req.body.first_name,
-        last: req.body.last_name
-      },
-      items,
-      note: req.body.note,
-      total
-    });
+  // if (req.body.type === 'payment_intent.succeeded') {
+  //   const paymentIntent = req.body.data.object;
+  //   console.log('PaymentIntent was successful!', paymentIntent);
+
+  //   try {
+  //     const order = new Order({
+  //       customer_contact: {
+  //         city: req.body.city,
+  //         email_address: req.body.email_address,
+  //         phone_number: req.body.phone_number,
+  //         state: req.body.state,
+  //         street_address: req.body.street_address,
+  //         zip: req.body.zip
+  //       },
+  //       customer_name: {
+  //         first: req.body.first_name,
+  //         last: req.body.last_name
+  //       },
+  //       items,
+  //       note: req.body.note,
+  //       total
+  //     });
+    
+  //     await order.save();
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
+
+  // Return a 200 response to acknowledge receipt of the event
+  // res.json({ received: true });
+  // try {
+  //   const order = new Order({
+  //     customer_contact: {
+  //       city: req.body.city,
+  //       email_address: req.body.email_address,
+  //       phone_number: req.body.phone_number,
+  //       state: req.body.state,
+  //       street_address: req.body.street_address,
+  //       zip: req.body.zip
+  //     },
+  //     customer_name: {
+  //       first: req.body.first_name,
+  //       last: req.body.last_name
+  //     },
+  //     items,
+  //     note: req.body.note,
+  //     total
+  //   });
   
-    await order.save();
-    res.status(201).json(order);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  //   await order.save();
+    // res.status(201).json(order);
+  // } catch (error) {
+  //   res.status(500).json({ message: error.message });
+  // }
 }
 
 async function createPaymentIntent (req, res, next) {
@@ -65,7 +96,7 @@ async function createPaymentIntent (req, res, next) {
 
 async function deleteOrder (req, res, next) {
   try {
-    const order = await Order.findByIdAndDelete(req.body.order_id);
+    const order = await Order.findByIdAndDelete(req.params.order_id);
     if (!order) {
       return next();
     } else {
@@ -80,7 +111,7 @@ async function editOrder (req, res, next) {
   try {
     const changes = req.body;
     delete changes.order_id;
-    const order = await Order.findByIdAndUpdate(req.body.order_id, changes, { new: true });
+    const order = await Order.findByIdAndUpdate(req.params.order_id, changes, { new: true });
     if (!order) {
       next();
     } else {
