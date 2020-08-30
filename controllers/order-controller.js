@@ -26,7 +26,7 @@ async function createOrder (req, res, next) {
       const prices = paymentIntent.metadata.item_prices.split(',');
       const quantities = paymentIntent.metadata.item_quantities.split(',');
 
-      for (let i = 0; i < ids.length; i++) {
+      for (let i = 0; i < ids.length - 1; i++) {
         item.price = parseInt(prices[i]) / 100;
         item.product_id = mongoose.Types.ObjectId(ids[i]);
         item.product_name = names[i];
