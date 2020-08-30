@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const stripe = require('stripe')(`${process.env.STRIPE_SECRET_KEY}`);
 
 const Order = require('../models/order-model');
@@ -12,6 +13,27 @@ async function createOrder (req, res, next) {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_ENDPOINT_SECRET);
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object;
+      const items = [];
+      let item = {
+        price: undefined,
+        product_id: undefined,
+        product_name: undefined,
+        quantity: undefined
+      };
+
+      const ids = paymentIntent.metadata.item_ids.split(',');
+      const names = paymentIntent.metadata.item_names.split(',');
+      const prices = paymentIntent.metadata.item_prices.split(',');
+      const quantities = paymentIntent.metadata.item_quantities.split(',');
+
+      for (let i = 0; i < ids.length; i++) {
+        item.price = parseInt(prices[i]) / 100;
+        item.product_id = mongoose.Types.ObjectId(ids[i]);
+        item.product_name = names[i];
+        item.quantity = parseInt(quantities[i]);
+        items.push(item);
+        Product.findByIdAndUpdate(item.product_id, { $inc: { quantity: -item.quantity } });
+      }
 
       const order = new Order({
         _id: paymentIntent.id,
@@ -24,10 +46,10 @@ async function createOrder (req, res, next) {
           zip: paymentIntent.shipping.address.postal_code
         },
         customer_name: paymentIntent.shipping.name,
-        items: paymentIntent.metadata.items,
+        items,
         total: paymentIntent.amount
       });
-    
+
       await order.save();
     }
   
@@ -54,16 +76,31 @@ async function createPaymentIntent (req, res, next) {
       }).quantity;
     }
 
-    const total = items.reduce(function (a, c) {
+    const amount = items.reduce(function (a, c) {
       return a + (c.price * c.quantity);
     }, 0) * 100;
+    const item_ids = items.reduce(function (a, c) {
+      return a + c._id + ',';
+    }, '');
+    const item_names = items.reduce(function (a, c){
+      return a + c.name + ',';
+    }, '');
+    const item_prices = items.reduce(function (a, c){
+      return a + (c.price * 100) + ',';
+    }, '');
+    const item_quantities = items.reduce(function (a, c) {
+      return a + c.quantity + ',';
+    }, '');
 
     // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: total,
+      amount,
       currency: "usd",
       metadata: {
-        items
+        item_ids,
+        item_names,
+        item_prices,
+        item_quantities
       }
     });
 

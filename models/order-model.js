@@ -23,6 +23,10 @@ const itemSchema = new Schema({
 });
 
 const orderSchema = new Schema({
+  _id: {
+    required: true,
+    type: String
+  },
   customer_contact: {
     city: String,
     email_address: {
