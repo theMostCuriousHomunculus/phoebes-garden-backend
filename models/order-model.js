@@ -35,17 +35,10 @@ const orderSchema = new Schema({
     zip: String
   },
   customer_name: {
-    first: {
-      required: true,
-      type: String
-    },
-    last: {
-      required: true,
-      type: String
-    }
+    required: true,
+    type: String
   },
   items: [itemSchema],
-  note: String,
   total: {
     min: 0,
     required: true,

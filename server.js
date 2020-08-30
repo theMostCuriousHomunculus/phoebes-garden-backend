@@ -1,15 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const bodyParser = require('body-parser');
 const express = require('express');
 const mongoose = require('mongoose');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 // const session = require('express-session');
 // const MongoDBtore = require('connect-mongodb-session')(session);
 // const csrf = require('csurf');
-
-const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
 const adminRouter = require('./routers/admin-router');
 const orderRouter = require('./routers/order-router');
@@ -22,33 +19,7 @@ mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD
 });
 
 const server = express();
-// const store = new MongoDBStore({
-//   uri: process.env.DB_CONNECTION,
-//   collection: 'sessions'
-// });
-// const csrfProtection = csrf();
 
-server.post('/webhook', bodyParser.raw({type: 'application/json'}), function (req, res) {
-
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent was successful!');
-    }
-  
-    // Return a 200 response to acknowledge receipt of the event
-    res.json({ received: true });
-  }
-  catch (err) {
-    res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-});
-
-server.use(express.json());
 server.use(express.static(path.join(__dirname, 'public')));
 server.use('/api/uploads/images', express.static(path.join('uploads', 'images')));
 // server.use(session({
@@ -66,6 +37,17 @@ server.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Methods', 'DELETE, GET, PATCH, POST');
   next();
 });
+
+// fulfilling order requires parsing of RAW req from Stripe, so using this router before using express.json
+server.use('/api/order', orderRouter);
+
+// const store = new MongoDBStore({
+//   uri: process.env.DB_CONNECTION,
+//   collection: 'sessions'
+// });
+// const csrfProtection = csrf();
+
+server.use(express.json());
 server.use(express.urlencoded({
   extended: true,
   useNewUrlParser: true,
@@ -79,7 +61,6 @@ server.use(express.urlencoded({
 // });
 
 server.use('/api/admin', adminRouter);
-server.use('/api/order', orderRouter);
 server.use('/api/product', productRouter);
 
 server.use(function (req, res, next) {

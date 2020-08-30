@@ -4,61 +4,39 @@ const Order = require('../models/order-model');
 const Product = require('../models/product-model');
 
 async function createOrder (req, res, next) {
-  // if (req.body.type === 'payment_intent.succeeded') {
-  //   const paymentIntent = req.body.data.object;
-  //   console.log('PaymentIntent was successful!', paymentIntent);
 
-  //   try {
-  //     const order = new Order({
-  //       customer_contact: {
-  //         city: req.body.city,
-  //         email_address: req.body.email_address,
-  //         phone_number: req.body.phone_number,
-  //         state: req.body.state,
-  //         street_address: req.body.street_address,
-  //         zip: req.body.zip
-  //       },
-  //       customer_name: {
-  //         first: req.body.first_name,
-  //         last: req.body.last_name
-  //       },
-  //       items,
-  //       note: req.body.note,
-  //       total
-  //     });
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_ENDPOINT_SECRET);
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+
+      const order = new Order({
+        _id: paymentIntent.id,
+        customer_contact: {
+          city: paymentIntent.shipping.address.city,
+          email_address: paymentIntent.receipt_email,
+          phone_number: paymentIntent.shipping.phone,
+          state: paymentIntent.shipping.address.state,
+          street_address: paymentIntent.shipping.address.line1,
+          zip: paymentIntent.shipping.address.postal_code
+        },
+        customer_name: paymentIntent.shipping.name,
+        items: paymentIntent.metadata.items,
+        total: paymentIntent.amount
+      });
     
-  //     await order.save();
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
-
-  // Return a 200 response to acknowledge receipt of the event
-  // res.json({ received: true });
-  // try {
-  //   const order = new Order({
-  //     customer_contact: {
-  //       city: req.body.city,
-  //       email_address: req.body.email_address,
-  //       phone_number: req.body.phone_number,
-  //       state: req.body.state,
-  //       street_address: req.body.street_address,
-  //       zip: req.body.zip
-  //     },
-  //     customer_name: {
-  //       first: req.body.first_name,
-  //       last: req.body.last_name
-  //     },
-  //     items,
-  //     note: req.body.note,
-  //     total
-  //   });
+      await order.save();
+    }
   
-  //   await order.save();
-    // res.status(201).json(order);
-  // } catch (error) {
-  //   res.status(500).json({ message: error.message });
-  // }
+    // Return a 200 response to acknowledge receipt of the event
+    res.json({ received: true });
+  }
+  catch (err) {
+    res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 }
 
 async function createPaymentIntent (req, res, next) {
@@ -83,7 +61,10 @@ async function createPaymentIntent (req, res, next) {
     // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripe.paymentIntents.create({
       amount: total,
-      currency: "usd"
+      currency: "usd",
+      metadata: {
+        items
+      }
     });
 
     res.send({
