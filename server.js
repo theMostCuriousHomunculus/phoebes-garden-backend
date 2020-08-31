@@ -67,17 +67,17 @@ server.use(function (req, res, next) {
   res.status(404).send();
 });
 
-server.use(function (error, req, res, next) {
-  if (req.file) {
-    fs.unlink(req.file.path, function (err) {
-      console.log(err);
-    });
-  }
-  if (res.headerSent) {
-    return next(error);
-  }
-  res.status(error.code || 500).json({ message: error.message || 'An unknown error occured!' });
-});
+// server.use(function (error, req, res, next) {
+//   if (req.file) {
+//     fs.unlink(req.file.path, function (err) {
+//       console.log(err);
+//     });
+//   }
+//   if (res.headerSent) {
+//     return next(error);
+//   }
+//   res.status(error.code || 500).json({ message: error.message || 'An unknown error occured!' });
+// });
 
 server.listen(process.env.PORT, function () {
     console.log(`Server is up on port ${process.env.PORT}.`);
