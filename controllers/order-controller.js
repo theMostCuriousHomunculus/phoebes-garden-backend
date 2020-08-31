@@ -40,7 +40,7 @@ async function createOrder (req, res, next) {
         item.product_id = mongoose.Types.ObjectId(ids[i]);
         item.product_name = names[i];
         item.quantity = parseInt(quantities[i]);
-        items.push(item);
+        items.push({ ...item });
         emailBody += `<li>${item.product_name}: ${item.quantity}</li>`;
         await Product.findByIdAndUpdate(item.product_id, { $inc: { quantity: -item.quantity } });
       }
