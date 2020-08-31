@@ -65,7 +65,7 @@ async function createOrder (req, res, next) {
         from: 'do-not-reply@phoebes-garden.us',
         subject: "New Order - Phoebe's Garden",
         html:
-          `<h1>New Order For ${paymentIntent.shipping.name}</h1>
+          `<h1>New Order For ${paymentIntent.shipping ? paymentIntent.shipping.name : 'Nobody'}</h1>
           <ul>
             ${emailBody}
           </ul>
