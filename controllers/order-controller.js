@@ -48,14 +48,14 @@ async function createOrder (req, res, next) {
       const order = new Order({
         _id: paymentIntent.id,
         customer_contact: {
-          city: paymentIntent.shipping.address.city,
-          email_address: paymentIntent.receipt_email || '123@abc.com',
-          phone_number: paymentIntent.shipping.phone,
-          state: paymentIntent.shipping.address.state,
-          street_address: paymentIntent.shipping.address.line1,
-          zip: paymentIntent.shipping.address.postal_code
+          city: paymentIntent.shipping ? paymentIntent.shipping.address.city : null,
+          email_address: paymentIntent.receipt_email,
+          phone_number: paymentIntent.shipping ? paymentIntent.shipping.phone : null,
+          state: paymentIntent.shipping ? paymentIntent.shipping.address.state : null,
+          street_address: paymentIntent.shipping ? paymentIntent.shipping.address.line1 : null,
+          zip: paymentIntent.shipping ? paymentIntent.shipping.address.postal_code : null
         },
-        customer_name: paymentIntent.shipping.name,
+        customer_name: paymentIntent.shipping ? paymentIntent.shipping.name : null,
         items,
         total: paymentIntent.amount
       });
