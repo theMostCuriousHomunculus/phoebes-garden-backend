@@ -1,8 +1,16 @@
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
+const sendgridTransport = require('nodemailer-sendgrid-transport');
 const stripe = require('stripe')(`${process.env.STRIPE_SECRET_KEY}`);
 
 const Order = require('../models/order-model');
 const Product = require('../models/product-model');
+
+const transporter = nodemailer.createTransport(sendgridTransport({
+  auth: {
+    api_key: process.env.SENDGRID_API_KEY
+  }
+}));
 
 async function createOrder (req, res, next) {
 
@@ -25,6 +33,7 @@ async function createOrder (req, res, next) {
       const names = paymentIntent.metadata.item_names.split(',');
       const prices = paymentIntent.metadata.item_prices.split(',');
       const quantities = paymentIntent.metadata.item_quantities.split(',');
+      let emailBody = '';
 
       for (let i = 0; i < ids.length - 1; i++) {
         item.price = parseInt(prices[i]) / 100;
@@ -32,14 +41,15 @@ async function createOrder (req, res, next) {
         item.product_name = names[i];
         item.quantity = parseInt(quantities[i]);
         items.push(item);
-        Product.findByIdAndUpdate(item.product_id, { $inc: { quantity: -item.quantity } });
+        emailBody += `<li>${item.product_name}: ${item.quantity}</li>`;
+        await Product.findByIdAndUpdate(item.product_id, { $inc: { quantity: -item.quantity } });
       }
 
       const order = new Order({
         _id: paymentIntent.id,
         customer_contact: {
           city: paymentIntent.shipping.address.city,
-          email_address: paymentIntent.receipt_email,
+          email_address: paymentIntent.receipt_email || '123@abc.com',
           phone_number: paymentIntent.shipping.phone,
           state: paymentIntent.shipping.address.state,
           street_address: paymentIntent.shipping.address.line1,
@@ -50,6 +60,17 @@ async function createOrder (req, res, next) {
         total: paymentIntent.amount
       });
 
+      transporter.sendMail({
+        to: process.env.ADMIN_EMAIL,
+        from: 'do-not-reply@phoebes-garden.us',
+        subject: "New Order - Phoebe's Garden",
+        html:
+          `<h1>New Order For ${paymentIntent.shipping.name}</h1>
+          <ul>
+            ${emailBody}
+          </ul>
+          <h2>Total Paid Through Stripe: $${paymentIntent.amount / 100}</h2>`
+      });
       await order.save();
     }
   
@@ -57,6 +78,7 @@ async function createOrder (req, res, next) {
     res.json({ received: true });
   }
   catch (err) {
+    console.log(err);
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 }
