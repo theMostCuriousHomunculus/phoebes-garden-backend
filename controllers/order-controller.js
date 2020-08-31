@@ -78,7 +78,12 @@ async function createOrder (req, res, next) {
     res.json({ received: true });
   }
   catch (err) {
-    console.log(err);
+    transporter.sendMail({
+      to: process.env.ADMIN_EMAIL,
+      from: 'do-not-reply@phoebes-garden.us',
+      subject: "Order Failure",
+      html: `<p>${err}</p>`
+    });
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 }
