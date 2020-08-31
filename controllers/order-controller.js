@@ -55,7 +55,7 @@ async function createOrder (req, res, next) {
           street_address: paymentIntent.shipping ? paymentIntent.shipping.address.line1 : null,
           zip: paymentIntent.shipping ? paymentIntent.shipping.address.postal_code : null
         },
-        customer_name: paymentIntent.shipping ? paymentIntent.shipping.name : null,
+        customer_name: paymentIntent.shipping ? paymentIntent.shipping.name : 'Nobody',
         items,
         total: paymentIntent.amount
       });
