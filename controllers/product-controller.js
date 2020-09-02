@@ -34,7 +34,7 @@ async function deleteProduct (req, res) {
     } else {
       await s3.deleteObject({
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: product.image.replace(`https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, '')
+        Key: product.image.replace(/https:\/\/.*\.amazonaws\.com\//, '')
       }).promise();
       res.status(200).json(product);
     }
@@ -55,7 +55,7 @@ async function editProduct (req, res) {
       const oldProduct = await Product.findById(req.params.productId);
       await s3.deleteObject({
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: oldProduct.image.replace(`https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, '')
+        Key: oldProduct.image.replace(/https:\/\/.*\.amazonaws\.com\//, '')
       }).promise();
       changes.image = req.file.location;
     }
