@@ -1,4 +1,12 @@
-const fs = require('fs');
+const AWS = require('aws-sdk');
+
+AWS.config.update({
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
 
 const Product = require('../models/product-model');
 
@@ -6,7 +14,7 @@ async function createProduct (req, res) {
   try {
     const product = new Product({
       description: req.body.description,
-      image: req.file.path.replace(/\\/g, '/'),
+      image: req.file.location,
       name: req.body.name,
       price: req.body.price,
       quantity: req.body.quantity
@@ -24,11 +32,10 @@ async function deleteProduct (req, res) {
     if (!product) {
       next();
     } else {
-      fs.unlink(product.image, function (error) {
-        if (error) {
-          console.log(error);
-        }
-      });
+      await s3.deleteObject({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: product.image.replace(`https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, '')
+      }).promise();
       res.status(200).json(product);
     }
   } catch (error) {
@@ -46,19 +53,14 @@ async function editProduct (req, res) {
     };
     if (req.file) {
       const oldProduct = await Product.findById(req.params.productId);
-      fs.unlink(oldProduct.image, function (error) {
-        if (error) {
-          console.log(error);
-        }
-      });
-      changes.image = req.file.path.replace(/\\/g, '/');
+      await s3.deleteObject({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: oldProduct.image.replace(`https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`, '')
+      }).promise();
+      changes.image = req.file.location;
     }
     const product = await Product.findByIdAndUpdate(req.params.productId, changes, { new: true });
-    if (!product) {
-      next();
-    } else {
-      res.status(200).json(product);
-    }
+    res.status(200).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -1,28 +1,27 @@
+const AWS = require('aws-sdk');
 const multer = require('multer');
-const path = require('path');
-const { v4: uuid } = require('uuid');
+const multerS3 = require('multer-s3');
 
-const MIME_TYPE_MAP = {
-  "image/jpeg": "jpeg",
-  "image/jpg": "jpg",
-  "image/png": "png"
-}
+AWS.config.update({
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
 
 const fileUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, path.join('uploads', 'images'));
+  storage: multerS3({
+    acl: 'public-read',
+    bucket: process.env.AWS_BUCKET_NAME,
+    key: function (req, file, cb) {
+      cb(null, Date.now().toString());
     },
-    filename: function (req, file, cb) {
-      const extension = MIME_TYPE_MAP[file.mimetype];
-      cb(null, `${uuid()}.${extension}`);
-    }
-  }),
-  fileFilter: function (req, file, cb) {
-    const isValid = !!MIME_TYPE_MAP[file.mimetype];
-    let error = isValid ? null : new Error('Invalid mime type!');
-    cb(error, isValid);
-  }
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    s3
+  })
 });
 
 module.exports = fileUpload;
